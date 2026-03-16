@@ -1,11 +1,11 @@
 #!/bin/bash
-# install.sh - One-command installer for oss-code-review Claude Code skill
-# Usage: bash <(curl -fsSL https://raw.githubusercontent.com/googs1025/oss-code-review/main/scripts/install.sh)
+# install.sh - One-command installer for code-review-skill Claude Code skill
+# Usage: bash <(curl -fsSL https://raw.githubusercontent.com/googs1025/code-review-skill/main/scripts/install.sh)
 
 set -e
 
-SKILL_NAME="oss-code-review"
-REPO="googs1025/oss-code-review"
+SKILL_NAME="code-review-skill"
+REPO="googs1025/code-review-skill"
 INSTALL_DIR="${HOME}/.claude/skills/${SKILL_NAME}"
 
 echo "📦 Installing ${SKILL_NAME} Claude Code skill..."
@@ -39,8 +39,8 @@ echo ""
 echo "✅ Installed successfully to ${INSTALL_DIR}"
 echo ""
 echo "🚀 Usage in Claude Code:"
-echo "   /oss-code-review https://github.com/owner/repo/pull/123"
-echo "   /oss-code-review  (then paste a diff or code snippet)"
+echo "   /code-review-skill https://github.com/owner/repo/pull/123"
+echo "   /code-review-skill  (then paste a diff or code snippet)"
 echo ""
 echo "📋 Prerequisites:"
 echo "   - gh CLI (GitHub): https://cli.github.com"

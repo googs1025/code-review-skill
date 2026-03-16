@@ -1,4 +1,4 @@
-# oss-code-review
+# code-review-skill
 
 A Claude Code skill that turns Claude into a senior open-source code reviewer. Supports GitHub/GitLab PR links, raw diffs, code snippets, and commit history — outputs a structured report with Critical/Major/Minor issue grading and a final merge recommendation.
 
@@ -9,7 +9,7 @@ A Claude Code skill that turns Claude into a senior open-source code reviewer. S
 ## Features
 
 - **Auto-detects input type** — PR URL, diff, code snippet, or commit range
-- **4-dimension analysis** — Code Quality, Security, Performance, OSS Compliance
+- **4-dimension analysis** — Code Quality, Security, Performance, Open-Source Compliance
 - **Severity grading** — 🔴 Critical / 🟠 Major / 💡 Minor
 - **Structured output** — consistent report format every time
 - **GitHub & GitLab** — works with both platforms via `gh` and `glab` CLIs
@@ -20,15 +20,15 @@ A Claude Code skill that turns Claude into a senior open-source code reviewer. S
 ### One-line install (recommended)
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/googs1025/oss-code-review/main/scripts/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/googs1025/code-review-skill/main/scripts/install.sh)
 ```
 
 ### Manual install
 
 ```bash
-git clone https://github.com/googs1025/oss-code-review.git \
-  ~/.claude/skills/oss-code-review
-chmod +x ~/.claude/skills/oss-code-review/scripts/*.sh
+git clone https://github.com/googs1025/code-review-skill.git \
+  ~/.claude/skills/code-review-skill
+chmod +x ~/.claude/skills/code-review-skill/scripts/*.sh
 ```
 
 ### Prerequisites
@@ -48,17 +48,17 @@ glab auth login  # GitLab
 
 ## Usage
 
-After installation, use the `/oss-code-review` slash command in Claude Code:
+After installation, use the `/code-review-skill` slash command in Claude Code:
 
 ```
 # Review a GitHub PR
-/oss-code-review https://github.com/owner/repo/pull/123
+/code-review-skill https://github.com/owner/repo/pull/123
 
 # Review a GitLab MR
-/oss-code-review https://gitlab.com/group/project/-/merge_requests/456
+/code-review-skill https://gitlab.com/group/project/-/merge_requests/456
 
 # Review a pasted diff or code snippet
-/oss-code-review
+/code-review-skill
 ```
 
 ### Example output
@@ -89,7 +89,7 @@ After installation, use the `/oss-code-review` slash command in Claude Code:
 ## Update
 
 ```bash
-cd ~/.claude/skills/oss-code-review && git pull
+cd ~/.claude/skills/code-review-skill && git pull
 ```
 
 Or re-run the one-line installer.
@@ -97,7 +97,7 @@ Or re-run the one-line installer.
 ## File structure
 
 ```
-oss-code-review/
+code-review-skill/
 ├── SKILL.md                        # Skill prompt (loaded by Claude Code)
 ├── scripts/
 │   ├── fetch_pr.sh                 # Fetch PR/MR metadata and diff
@@ -109,7 +109,7 @@ oss-code-review/
 
 ## How it works
 
-1. Claude Code detects `/oss-code-review` and loads `SKILL.md` as the system prompt
+1. Claude Code detects `/code-review-skill` and loads `SKILL.md` as the system prompt
 2. If a PR URL is provided, Claude runs `scripts/fetch_pr.sh` via Bash to fetch metadata and the full diff using the `gh` or `glab` CLI
 3. Claude analyzes the diff across 4 dimensions, referencing `references/security_checklist.md` for security issues
 4. Claude outputs the structured report
@@ -133,15 +133,15 @@ MIT
 **一键安装（推荐）：**
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/googs1025/oss-code-review/main/scripts/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/googs1025/code-review-skill/main/scripts/install.sh)
 ```
 
 **手动安装：**
 
 ```bash
-git clone https://github.com/googs1025/oss-code-review.git \
-  ~/.claude/skills/oss-code-review
-chmod +x ~/.claude/skills/oss-code-review/scripts/*.sh
+git clone https://github.com/googs1025/code-review-skill.git \
+  ~/.claude/skills/code-review-skill
+chmod +x ~/.claude/skills/code-review-skill/scripts/*.sh
 ```
 
 **前置依赖：**
@@ -153,17 +153,17 @@ chmod +x ~/.claude/skills/oss-code-review/scripts/*.sh
 
 ```
 # 审查 GitHub PR
-/oss-code-review https://github.com/owner/repo/pull/123
+/code-review-skill https://github.com/owner/repo/pull/123
 
 # 审查 GitLab MR
-/oss-code-review https://gitlab.com/group/project/-/merge_requests/456
+/code-review-skill https://gitlab.com/group/project/-/merge_requests/456
 
 # 粘贴 diff 或代码片段直接分析
-/oss-code-review
+/code-review-skill
 ```
 
 ### 更新
 
 ```bash
-cd ~/.claude/skills/oss-code-review && git pull
+cd ~/.claude/skills/code-review-skill && git pull
 ```
