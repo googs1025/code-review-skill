@@ -94,6 +94,20 @@ cd ~/.claude/skills/code-review-skill && git pull
 
 Or re-run the one-line installer.
 
+## Uninstall
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/googs1025/code-review-skill/main/scripts/uninstall.sh)
+```
+
+Or manually:
+
+```bash
+rm -rf ~/.claude/skills/code-review-skill
+```
+
+This only removes the `code-review-skill` directory — other skills in `~/.claude/skills/` are not affected.
+
 ## File structure
 
 ```
@@ -102,7 +116,8 @@ code-review-skill/
 ├── scripts/
 │   ├── fetch_pr.sh                 # Fetch PR/MR metadata and diff
 │   ├── fetch_commits.sh            # Fetch commit history
-│   └── install.sh                  # One-command installer
+│   ├── install.sh                  # One-command installer
+│   └── uninstall.sh                # One-command uninstaller
 └── references/
     └── security_checklist.md       # Per-language security checklist
 ```
@@ -167,3 +182,17 @@ chmod +x ~/.claude/skills/code-review-skill/scripts/*.sh
 ```bash
 cd ~/.claude/skills/code-review-skill && git pull
 ```
+
+### 卸载
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/googs1025/code-review-skill/main/scripts/uninstall.sh)
+```
+
+或手动删除：
+
+```bash
+rm -rf ~/.claude/skills/code-review-skill
+```
+
+仅删除 `code-review-skill` 目录，不影响 `~/.claude/skills/` 下的其他 skill。
