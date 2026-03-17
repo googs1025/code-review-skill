@@ -14,12 +14,16 @@ if [ ! -d "$INSTALL_DIR" ]; then
   exit 0
 fi
 
-# Confirm before removing
-echo "   Will remove: ${INSTALL_DIR}"
-read -p "   Continue? [y/N] " confirm
-if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-  echo "❌ Uninstall cancelled."
-  exit 0
+# Confirm before removing (skip in non-interactive mode)
+if [ -t 0 ]; then
+  echo "   Will remove: ${INSTALL_DIR}"
+  read -p "   Continue? [y/N] " confirm
+  if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+    echo "❌ Uninstall cancelled."
+    exit 0
+  fi
+else
+  echo "   Non-interactive mode: removing ${INSTALL_DIR}"
 fi
 
 rm -rf "$INSTALL_DIR"

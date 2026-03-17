@@ -40,6 +40,10 @@ chmod +x ~/.claude/skills/code-review-skill/scripts/*.sh
 | [gh CLI](https://cli.github.com) | For GitHub PRs and issues | Fetch PR/issue metadata and diff |
 | [glab CLI](https://gitlab.com/gitlab-org/cli) | For GitLab MRs and issues | Fetch MR/issue metadata and diff |
 
+**Platform compatibility**: macOS, Linux, WSL2. Native Windows (cmd/PowerShell) is not supported.
+
+**Minimum versions**: gh >= 2.0, glab >= 1.22, git >= 2.20, bash >= 4.0.
+
 Make sure you're authenticated:
 
 ```bash
@@ -138,6 +142,22 @@ code-review-skill/
 ## Contributing
 
 Issues and PRs are welcome. If you want to add support for a new platform (Bitbucket, Gitea, etc.) or extend the security checklist for another language, please open an issue first.
+
+**Local testing**:
+
+```bash
+# Test script robustness
+bash scripts/fetch_pr.sh invalid-url          # Should show format error
+bash scripts/fetch_issue.sh invalid-url        # Should show format error
+
+# Test with a real PR (requires gh auth)
+bash scripts/fetch_pr.sh https://github.com/owner/repo/pull/1
+
+# Verify SKILL.md YAML frontmatter
+head -10 SKILL.md
+```
+
+**Adding a new platform**: Create a new branch in `scripts/fetch_pr.sh` and `scripts/fetch_issue.sh` following the existing GitHub/GitLab pattern (CLI check, URL validation, metadata fetch, diff fetch).
 
 ## License
 

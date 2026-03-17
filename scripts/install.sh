@@ -18,8 +18,14 @@ fi
 
 # Check for gh CLI (optional but recommended)
 if ! command -v gh &>/dev/null; then
-  echo "⚠️  gh CLI not found. GitHub PR reviews will not work."
+  echo "⚠️  gh CLI not found. GitHub PR/Issue reviews will not work."
   echo "   Install from: https://cli.github.com"
+fi
+
+# Check for glab CLI (optional)
+if ! command -v glab &>/dev/null; then
+  echo "⚠️  glab CLI not found. GitLab MR/Issue reviews will not work."
+  echo "   Install from: https://gitlab.com/gitlab-org/cli"
 fi
 
 # Remove existing installation
