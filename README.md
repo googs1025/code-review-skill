@@ -1,6 +1,6 @@
 # code-review-skill
 
-A Claude Code skill that turns Claude into a senior open-source code reviewer. Supports GitHub/GitLab PR links, raw diffs, code snippets, and commit history — outputs a structured report with Critical/Major/Minor issue grading and a final merge recommendation.
+A Claude Code skill that turns Claude into a senior open-source code reviewer. Supports GitHub/GitLab PR links, raw diffs, code snippets, commit history, and issue analysis — outputs a structured report with Critical/Major/Minor issue grading and a final merge recommendation.
 
 [中文文档](#中文文档)
 
@@ -8,7 +8,8 @@ A Claude Code skill that turns Claude into a senior open-source code reviewer. S
 
 ## Features
 
-- **Auto-detects input type** — PR URL, diff, code snippet, or commit range
+- **Auto-detects input type** — PR URL, diff, code snippet, commit range, or issue link
+- **Issue analysis** — paste a GitHub/GitLab issue URL, get problem analysis and solution ideas
 - **4-dimension analysis** — Code Quality, Security, Performance, Open-Source Compliance
 - **Severity grading** — 🔴 Critical / 🟠 Major / 💡 Minor
 - **Structured output** — consistent report format every time
@@ -36,8 +37,8 @@ chmod +x ~/.claude/skills/code-review-skill/scripts/*.sh
 | Tool | Required | Purpose |
 |------|----------|---------|
 | [Claude Code](https://claude.ai/code) | ✅ Yes | The CLI that runs this skill |
-| [gh CLI](https://cli.github.com) | For GitHub PRs | Fetch PR metadata and diff |
-| [glab CLI](https://gitlab.com/gitlab-org/cli) | For GitLab MRs | Fetch MR metadata and diff |
+| [gh CLI](https://cli.github.com) | For GitHub PRs and issues | Fetch PR/issue metadata and diff |
+| [glab CLI](https://gitlab.com/gitlab-org/cli) | For GitLab MRs and issues | Fetch MR/issue metadata and diff |
 
 Make sure you're authenticated:
 
@@ -56,6 +57,9 @@ After installation, use the `/code-review-skill` slash command in Claude Code:
 
 # Review a GitLab MR
 /code-review-skill https://gitlab.com/group/project/-/merge_requests/456
+
+# Analyze a GitHub Issue
+/code-review-skill https://github.com/owner/repo/issues/456
 
 # Review a pasted diff or code snippet
 /code-review-skill
@@ -115,6 +119,7 @@ code-review-skill/
 ├── SKILL.md                        # Skill prompt (loaded by Claude Code)
 ├── scripts/
 │   ├── fetch_pr.sh                 # Fetch PR/MR metadata and diff
+│   ├── fetch_issue.sh              # Fetch issue metadata and comments
 │   ├── fetch_commits.sh            # Fetch commit history
 │   ├── install.sh                  # One-command installer
 │   └── uninstall.sh                # One-command uninstaller
@@ -126,8 +131,9 @@ code-review-skill/
 
 1. Claude Code detects `/code-review-skill` and loads `SKILL.md` as the system prompt
 2. If a PR URL is provided, Claude runs `scripts/fetch_pr.sh` via Bash to fetch metadata and the full diff using the `gh` or `glab` CLI
-3. Claude analyzes the diff across 4 dimensions, referencing `references/security_checklist.md` for security issues
-4. Claude outputs the structured report
+3. If an issue URL is provided, Claude runs `scripts/fetch_issue.sh` to fetch issue details and comments
+4. For PRs/diffs, Claude analyzes the code across 4 dimensions, referencing `references/security_checklist.md` for security issues; for issues, Claude performs problem analysis and suggests solutions
+5. Claude outputs the structured report
 
 ## Contributing
 
@@ -141,7 +147,7 @@ MIT
 
 ## 中文文档
 
-一个 Claude Code Skill，让 Claude 化身资深开源代码 Reviewer。支持 GitHub/GitLab PR 链接、原始 diff、代码片段和 commit 历史，输出结构化审查报告，包含 Critical/Major/Minor 问题分级和最终合并建议。
+一个 Claude Code Skill，让 Claude 化身资深开源代码 Reviewer。支持 GitHub/GitLab PR 链接、原始 diff、代码片段、commit 历史和 Issue 分析，输出结构化审查报告，包含 Critical/Major/Minor 问题分级和最终合并建议。
 
 ### 安装
 
@@ -161,8 +167,8 @@ chmod +x ~/.claude/skills/code-review-skill/scripts/*.sh
 
 **前置依赖：**
 - [Claude Code](https://claude.ai/code)
-- GitHub PR 审查需安装 [gh CLI](https://cli.github.com) 并 `gh auth login`
-- GitLab MR 审查需安装 [glab CLI](https://gitlab.com/gitlab-org/cli) 并 `glab auth login`
+- GitHub PR/Issue 审查需安装 [gh CLI](https://cli.github.com) 并 `gh auth login`
+- GitLab MR/Issue 审查需安装 [glab CLI](https://gitlab.com/gitlab-org/cli) 并 `glab auth login`
 
 ### 使用
 
@@ -172,6 +178,9 @@ chmod +x ~/.claude/skills/code-review-skill/scripts/*.sh
 
 # 审查 GitLab MR
 /code-review-skill https://gitlab.com/group/project/-/merge_requests/456
+
+# 分析 GitHub Issue
+/code-review-skill https://github.com/owner/repo/issues/456
 
 # 粘贴 diff 或代码片段直接分析
 /code-review-skill
