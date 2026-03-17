@@ -40,10 +40,41 @@ if echo "$PR_URL" | grep -q "github.com"; then
   fi
 
   echo ""
-  echo "=== PR Diff ==="
-  if ! gh pr diff "$PR_NUM" --repo "$REPO" 2>&1; then
-    echo "错误：无法获取 PR diff。请检查 PR 是否存在以及是否有访问权限。"
-    exit 1
+  echo "=== PR Diff 统计 ==="
+  DIFF_STAT=$(gh pr diff "$PR_NUM" --repo "$REPO" 2>&1 | diffstat -s 2>/dev/null || true)
+  FILE_COUNT=$(gh pr view "$PR_NUM" --repo "$REPO" --json files --jq '.files | length' 2>/dev/null || echo "0")
+  ADD_COUNT=$(gh pr view "$PR_NUM" --repo "$REPO" --json additions --jq '.additions' 2>/dev/null || echo "0")
+  DEL_COUNT=$(gh pr view "$PR_NUM" --repo "$REPO" --json deletions --jq '.deletions' 2>/dev/null || echo "0")
+  TOTAL_LINES=$((ADD_COUNT + DEL_COUNT))
+
+  echo "文件数: ${FILE_COUNT}, 新增行: ${ADD_COUNT}, 删除行: ${DEL_COUNT}, 总变更行: ${TOTAL_LINES}"
+
+  if [ "$FILE_COUNT" -gt 100 ] || [ "$TOTAL_LINES" -gt 3000 ] 2>/dev/null; then
+    echo ""
+    echo "⚠️  大 PR 警告：${FILE_COUNT} 个文件, ${TOTAL_LINES} 行变更"
+    echo "自动过滤以下文件的 diff：lock 文件、vendor 目录、生成代码"
+    echo ""
+    echo "=== PR Diff（已过滤机器生成文件） ==="
+    if ! gh pr diff "$PR_NUM" --repo "$REPO" 2>&1 | \
+      awk '
+        /^diff --git/ {
+          skip = 0
+          if ($0 ~ /\/(vendor|node_modules|third_party|generated|__generated__)\//) skip = 1
+          if ($0 ~ /\.(lock|sum|min\.js|min\.css|pb\.go|generated\.go|snap)[ \t]/) skip = 1
+          if ($0 ~ /package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|go\.sum|Pipfile\.lock|composer\.lock|Gemfile\.lock|poetry\.lock/) skip = 1
+        }
+        !skip { print }
+      '; then
+      echo "错误：无法获取 PR diff。请检查 PR 是否存在以及是否有访问权限。"
+      exit 1
+    fi
+  else
+    echo ""
+    echo "=== PR Diff ==="
+    if ! gh pr diff "$PR_NUM" --repo "$REPO" 2>&1; then
+      echo "错误：无法获取 PR diff。请检查 PR 是否存在以及是否有访问权限。"
+      exit 1
+    fi
   fi
 
 # GitLab
@@ -64,7 +95,28 @@ elif echo "$PR_URL" | grep -q "gitlab.com"; then
 
   echo ""
   echo "=== MR Diff ==="
-  glab mr diff "$MR_NUM" 2>&1 || echo "警告：无法自动获取 diff，请手动粘贴"
+  MR_DIFF=$(glab mr diff "$MR_NUM" 2>&1) || { echo "警告：无法自动获取 diff，请手动粘贴"; MR_DIFF=""; }
+  if [ -n "$MR_DIFF" ]; then
+    MR_DIFF_LINES=$(echo "$MR_DIFF" | wc -l)
+    MR_FILE_COUNT=$(echo "$MR_DIFF" | grep -c '^diff --git' || true)
+    echo "文件数: ${MR_FILE_COUNT}, diff 行数: ${MR_DIFF_LINES}"
+    if [ "$MR_FILE_COUNT" -gt 100 ] || [ "$MR_DIFF_LINES" -gt 6000 ] 2>/dev/null; then
+      echo ""
+      echo "⚠️  大 MR 警告：${MR_FILE_COUNT} 个文件, ${MR_DIFF_LINES} 行 diff"
+      echo "自动过滤 lock 文件、vendor 目录、生成代码的 diff"
+      echo "$MR_DIFF" | awk '
+        /^diff --git/ {
+          skip = 0
+          if ($0 ~ /\/(vendor|node_modules|third_party|generated|__generated__)\//) skip = 1
+          if ($0 ~ /\.(lock|sum|min\.js|min\.css|pb\.go|generated\.go|snap)[ \t]/) skip = 1
+          if ($0 ~ /package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|go\.sum|Pipfile\.lock|composer\.lock|Gemfile\.lock|poetry\.lock/) skip = 1
+        }
+        !skip { print }
+      '
+    else
+      echo "$MR_DIFF"
+    fi
+  fi
 
 else
   echo "不支持的平台，请直接粘贴 diff 内容"
