@@ -12,7 +12,8 @@ An evidence-first code review skill for Codex and Claude Code. It supports GitHu
 - **Issue analysis** — paste a GitHub/GitLab issue URL, get problem analysis and solution ideas
 - **Evidence-first findings** — requires a reachable path, concrete impact, and precise location
 - **Calibrated grading** — separates Critical/Major/Minor impact from confidence
-- **Adaptive output** — concise for small diffs, scoped for focused reviews, coverage-aware for large PRs
+- **Complete PR reports** — overview, motivation, core changes, technical approach, severity sections, verification, and verdict
+- **Adaptive focused output** — concise for snippets and explicitly scoped reviews
 - **Existing-review assessment** — independently checks substantive AI/bot comments against the current PR head
 - **GitHub & GitLab** — works with both platforms via `gh` and `glab` CLIs
 - **Language-aware** — security checklist covers Go, Python, JS/TS, Rust, Java
@@ -80,15 +81,41 @@ Codex can discover the skill automatically for review requests, or you can invok
 ### Example output
 
 ```
-## Findings
+## Review 概览
+- **变更类型**: Bug 修复
+- **风险等级**: 中
+- **变更摘要**: 修正 PD 配置中的镜像版本不一致
+- **受影响模块**: deployment examples
 
-### [Major][高置信度] PD YAML 中 prefill/decode 镜像版本不一致
+## PR 主要工作
+
+### 背景与动机
+避免 prefill/decode 运行不兼容的协议版本。
+
+### 核心变更
+将两端镜像固定到同一个已验证版本。
+
+### 技术方案
+保持现有部署结构，只统一镜像 tag。
+
+## Critical Issues（必须解决才能合并）
+✅ 无 Critical 问题
+
+## Major Issues（强烈建议修复）
+
+### [高置信度] PD YAML 中 prefill/decode 镜像版本不一致
 - **位置**: `tensor-rt-pd.yaml:47` vs `:88`
 - **证据**: prefill 固定 `:1.0.0`，decode 使用 `:latest`
 - **影响**: 两端可能运行不兼容协议版本
 - **建议**: 将两端固定到同一个已验证版本
 
-## Verdict
+## Minor Issues（可选优化）
+✅ 无 Minor 问题
+
+## Verification
+- 配置渲染测试：通过
+
+## 总体评价
 **结论**: REQUEST_CHANGES
 ```
 
@@ -140,7 +167,7 @@ code-review-skill/
 3. Existing AI/bot findings are independently classified as valid, fixed, partial, incorrect, or unverified against the current head.
 4. Code reviews and issue analysis load separate references; security guidance loads only for security-sensitive paths.
 5. Candidate findings are checked for reachability, concrete impact, change relevance, and confidence.
-6. Output adapts to review size and includes unverified coverage gaps.
+6. Full PR/MR reviews use a stable report structure; snippets and focused reviews stay concise.
 
 ## Contributing
 

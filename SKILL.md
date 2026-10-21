@@ -58,22 +58,10 @@ description: Use when reviewing a GitHub or GitLab PR/MR, raw diff, code snippet
 
 ## 输出
 
-默认使用用户语言，先列 findings，按严重性排序。不要为不存在的等级创建空章节。
+默认使用用户语言，并严格使用代码审查指南中与输入类型对应的输出模式：
 
-审查 GitHub PR 时，在 findings 前输出 `Existing review assessment`，覆盖所有有实质内容的 AI/机器人评论，并标记“同意且未修复 / 同意且已修复 / 部分同意 / 不同意 / 证据不足”。同意且未修复的问题同时进入 findings；其他结论不要重复展开。
+- 完整 PR/MR review 必须输出完整报告，包括概览、PR 主要工作、已有 review 评估（存在时）、Critical/Major/Minor、Verification 和总体评价；没有问题的严重等级也保留并明确写“无”。
+- 小型代码片段、单文件检查和用户明确指定的聚焦审查使用精简格式。
+- Issue 使用独立的 Issue 分析模板。
 
-```markdown
-## Findings
-
-### [Major][高置信度] 简短标题
-- 位置：`path/to/file:line`
-- 证据：触发条件、执行路径，以及为什么现有保护不生效
-- 影响：具体失败结果和影响范围
-- 建议：最小可行修复方向
-
-## Verdict
-**结论**：REQUEST_CHANGES
-一句话说明决定合并结论的原因。
-```
-
-复杂 PR 可在 findings 前增加 2–5 条变更摘要。聚焦审查只报告指定维度。若没有可靠 finding，写明“未发现阻塞问题”，并列出未验证的测试、运行环境或上下文盲区；不要为了填模板制造问题或表扬。
+GitHub PR 的 `Existing review assessment` 覆盖所有有实质内容的 AI/机器人评论，并标记“同意且未修复 / 同意且已修复 / 部分同意 / 不同意 / 证据不足”。同意且未修复的问题同时进入对应严重等级；其他结论不要重复展开。
