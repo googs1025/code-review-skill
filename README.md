@@ -1,6 +1,6 @@
 # code-review-skill
 
-A Claude Code skill that turns Claude into a senior open-source code reviewer. Supports GitHub/GitLab PR links, raw diffs, code snippets, commit history, and issue analysis — outputs a structured report with Critical/Major/Minor issue grading and a final merge recommendation.
+An evidence-first code review skill for Codex and Claude Code. It supports GitHub/GitLab PR links, raw diffs, code snippets, commits, module reviews, and issue analysis while prioritizing actionable findings over checklist noise.
 
 [中文文档](#中文文档)
 
@@ -10,18 +10,26 @@ A Claude Code skill that turns Claude into a senior open-source code reviewer. S
 
 - **Auto-detects input type** — PR URL, diff, code snippet, commit range, or issue link
 - **Issue analysis** — paste a GitHub/GitLab issue URL, get problem analysis and solution ideas
-- **4-dimension analysis** — Code Quality, Security, Performance, Open-Source Compliance
-- **Severity grading** — 🔴 Critical / 🟠 Major / 💡 Minor
-- **Structured output** — consistent report format every time
+- **Evidence-first findings** — requires a reachable path, concrete impact, and precise location
+- **Calibrated grading** — separates Critical/Major/Minor impact from confidence
+- **Adaptive output** — concise for small diffs, scoped for focused reviews, coverage-aware for large PRs
+- **Existing-review assessment** — independently checks substantive AI/bot comments against the current PR head
 - **GitHub & GitLab** — works with both platforms via `gh` and `glab` CLIs
 - **Language-aware** — security checklist covers Go, Python, JS/TS, Rust, Java
 
 ## Installation
 
-### One-line install (recommended)
+### Claude Code one-line install
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/googs1025/code-review-skill/main/scripts/install.sh)
+```
+
+### Codex install
+
+```bash
+git clone https://github.com/googs1025/code-review-skill.git \
+  ~/.codex/skills/code-review-skill
 ```
 
 ### Manual install
@@ -36,7 +44,7 @@ chmod +x ~/.claude/skills/code-review-skill/scripts/*.sh
 
 | Tool | Required | Purpose |
 |------|----------|---------|
-| [Claude Code](https://claude.ai/code) | ✅ Yes | The CLI that runs this skill |
+| Codex or [Claude Code](https://claude.ai/code) | ✅ Yes | Agent runtime |
 | [gh CLI](https://cli.github.com) | For GitHub PRs and issues | Fetch PR/issue metadata and diff |
 | [glab CLI](https://gitlab.com/gitlab-org/cli) | For GitLab MRs and issues | Fetch MR/issue metadata and diff |
 
@@ -53,7 +61,7 @@ glab auth login  # GitLab
 
 ## Usage
 
-After installation, use the `/code-review-skill` slash command in Claude Code:
+Codex can discover the skill automatically for review requests, or you can invoke `$code-review-skill` explicitly. In Claude Code, use `/code-review-skill`.
 
 ```
 # Review a GitHub PR
@@ -72,25 +80,15 @@ After installation, use the `/code-review-skill` slash command in Claude Code:
 ### Example output
 
 ```
-## 📋 Review 概览
-- **变更类型**: 新功能
-- **风险等级**: 🟠 中
-- **变更摘要**: 为 PD 分离路由新增 TensorRT-LLM 引擎支持，同时重构重复的 prefill 逻辑为公共 helper。
-- **受影响模块**: pd_disaggregation.go, pd_disaggregation_test.go
+## Findings
 
----
-
-## 🚨 Critical Issues
-✅ 无 Critical 问题
-
-## ⚠️ Major Issues
-### PD YAML 中 prefill/decode 镜像版本不一致
+### [Major][高置信度] PD YAML 中 prefill/decode 镜像版本不一致
 - **位置**: `tensor-rt-pd.yaml:47` vs `:88`
-- **问题描述**: prefill 固定 :1.0.0，decode 用 :latest
-- **风险**: 版本错位导致 PD 协议不兼容
-- **建议**: 统一为 :1.0.0
+- **证据**: prefill 固定 `:1.0.0`，decode 使用 `:latest`
+- **影响**: 两端可能运行不兼容协议版本
+- **建议**: 将两端固定到同一个已验证版本
 
-## 🏁 总体评价
+## Verdict
 **结论**: REQUEST_CHANGES
 ```
 
@@ -127,17 +125,22 @@ code-review-skill/
 │   ├── fetch_commits.sh            # Fetch commit history
 │   ├── install.sh                  # One-command installer
 │   └── uninstall.sh                # One-command uninstaller
-└── references/
-    └── security_checklist.md       # Per-language security checklist
+├── references/
+│   ├── code_review.md              # Detailed code review workflow
+│   ├── issue_analysis.md           # Issue-specific analysis workflow
+│   └── security_checklist.md       # Evidence-oriented security guide
+└── tests/
+    └── scripts_test.sh             # Fetch helper behavior tests
 ```
 
 ## How it works
 
-1. Claude Code detects `/code-review-skill` and loads `SKILL.md` as the system prompt
-2. If a PR URL is provided, Claude runs `scripts/fetch_pr.sh` via Bash to fetch metadata and the full diff using the `gh` or `glab` CLI
-3. If an issue URL is provided, Claude runs `scripts/fetch_issue.sh` to fetch issue details and comments
-4. For PRs/diffs, Claude analyzes the code across 4 dimensions, referencing `references/security_checklist.md` for security issues; for issues, Claude performs problem analysis and suggests solutions
-5. Claude outputs the structured report
+1. The agent loads `SKILL.md` and routes the request by input type.
+2. GitHub PR fetching also collects review summaries, inline threads, and general PR comments.
+3. Existing AI/bot findings are independently classified as valid, fixed, partial, incorrect, or unverified against the current head.
+4. Code reviews and issue analysis load separate references; security guidance loads only for security-sensitive paths.
+5. Candidate findings are checked for reachability, concrete impact, change relevance, and confidence.
+6. Output adapts to review size and includes unverified coverage gaps.
 
 ## Contributing
 
@@ -153,6 +156,9 @@ bash scripts/fetch_issue.sh invalid-url        # Should show format error
 # Test with a real PR (requires gh auth)
 bash scripts/fetch_pr.sh https://github.com/owner/repo/pull/1
 
+# Run local behavior tests
+bash tests/scripts_test.sh
+
 # Verify SKILL.md YAML frontmatter
 head -10 SKILL.md
 ```
@@ -167,7 +173,7 @@ MIT
 
 ## 中文文档
 
-一个 Claude Code Skill，让 Claude 化身资深开源代码 Reviewer。支持 GitHub/GitLab PR 链接、原始 diff、代码片段、commit 历史和 Issue 分析，输出结构化审查报告，包含 Critical/Major/Minor 问题分级和最终合并建议。
+一个面向 Codex 和 Claude Code 的证据优先代码审查 Skill。支持 GitHub/GitLab PR、diff、代码片段、commit、模块审查和 Issue 分析，强调可达路径、具体影响、置信度和简洁的合并建议。
 
 ### 安装
 

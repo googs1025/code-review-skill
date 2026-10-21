@@ -1,7 +1,7 @@
 {
   "name": "code-review-skill",
   "version": "1.0.0",
-  "description": "Claude Code skill for structured code review with Critical/Major/Minor grading",
+  "description": "Evidence-first code review skill for Codex and Claude Code",
   "author": "googs1025",
   "license": "MIT",
   "repository": {

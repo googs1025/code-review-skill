@@ -1,124 +1,131 @@
-#!/bin/bash
-# fetch_pr.sh - Fetch PR/MR metadata and diff from GitHub or GitLab
-# Usage: bash fetch_pr.sh <PR_URL>
+#!/usr/bin/env bash
+# Fetch PR/MR metadata and diff without requiring a local checkout.
 
-PR_URL="$1"
+set -euo pipefail
 
-if [ -z "$PR_URL" ]; then
-  echo "Usage: bash fetch_pr.sh <PR_URL>"
+PR_URL=${1:-}
+if [[ -z "$PR_URL" ]]; then
+  echo "Usage: bash fetch_pr.sh <PR_OR_MR_URL>" >&2
   exit 1
 fi
 
-# GitHub
-if echo "$PR_URL" | grep -q "github.com"; then
-  # Validate URL format
-  if ! echo "$PR_URL" | grep -qE 'github\.com/.+/.+/pull/[0-9]+'; then
-    echo "错误：无效的 GitHub PR URL 格式。期望格式：https://github.com/owner/repo/pull/123"
+DIFF_FILE=$(mktemp "${TMPDIR:-/tmp}/code-review-diff.XXXXXX")
+trap 'rm -f "$DIFF_FILE"' EXIT
+
+require_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "错误：未找到 $1 CLI。" >&2
     exit 1
   fi
+}
 
-  # Check gh CLI is installed
-  if ! command -v gh &>/dev/null; then
-    echo "错误：未找到 gh CLI。请先安装：https://cli.github.com"
-    exit 1
+print_github_review_context() {
+  local repo=$1
+  local number=$2
+
+  echo
+  echo "=== Existing Review Context ==="
+  echo "以下内容可能来自 AI、机器人或人工 reviewer；需结合当前 PR head 独立验证，不可直接采信。"
+
+  echo
+  echo "--- Review summaries ---"
+  if ! gh api --paginate "repos/${repo}/pulls/${number}/reviews" --jq \
+    '.[] | {kind:"review", id, author:.user.login, author_type:.user.type, state, body, commit_id, submitted_at, url:.html_url}'; then
+    echo "警告：无法获取 review summaries。" >&2
   fi
 
-  # Check gh auth status
-  if ! gh auth status &>/dev/null; then
-    echo "错误：gh CLI 未认证。请先运行：gh auth login"
-    exit 1
+  echo
+  echo "--- Inline review comments and replies ---"
+  if ! gh api --paginate "repos/${repo}/pulls/${number}/comments" --jq \
+    '.[] | {kind:"inline_comment", id, reply_to:.in_reply_to_id, author:.user.login, author_type:.user.type, body, path, line:(.line // .original_line), side:(.side // .original_side), commit_id, original_commit_id, created_at, updated_at, url:.html_url, diff_hunk}'; then
+    echo "警告：无法获取 inline review comments。" >&2
   fi
 
-  REPO=$(echo "$PR_URL" | sed -E 's|https://github.com/([^/]+/[^/]+)/pull/[0-9]+.*|\1|')
-  PR_NUM=$(echo "$PR_URL" | sed -E 's|.*/pull/([0-9]+).*|\1|')
+  echo
+  echo "--- General PR comments ---"
+  if ! gh api --paginate "repos/${repo}/issues/${number}/comments" --jq \
+    '.[] | {kind:"pr_comment", id, author:.user.login, author_type:.user.type, author_association, body, created_at, updated_at, url:.html_url}'; then
+    echo "警告：无法获取 PR comments。" >&2
+  fi
+}
+
+print_diff() {
+  local kind=$1
+  local file_count additions deletions total_lines
+  file_count=$(awk '/^diff --git / { count++ } END { print count + 0 }' "$DIFF_FILE")
+  additions=$(awk '/^\+[^+]/ { count++ } END { print count + 0 }' "$DIFF_FILE")
+  deletions=$(awk '/^-[^-]/ { count++ } END { print count + 0 }' "$DIFF_FILE")
+  total_lines=$((additions + deletions))
+
+  echo
+  echo "=== ${kind} Diff 统计 ==="
+  echo "文件数: ${file_count}, 新增行: ${additions}, 删除行: ${deletions}, 总变更行: ${total_lines}"
+
+  if ((file_count > 100 || total_lines > 3000)); then
+    echo
+    echo "⚠️  大型变更：输出已跳过常见依赖、vendor 和生成文件；元数据仍保留完整文件列表。"
+    echo "=== ${kind} Diff（已过滤低信号文件） ==="
+    awk '
+      /^diff --git/ {
+        skip = 0
+        if ($0 ~ /\/(vendor|node_modules|third_party|generated|__generated__)\//) skip = 1
+        if ($0 ~ /package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|go\.sum|Pipfile\.lock|composer\.lock|Gemfile\.lock|poetry\.lock/) skip = 1
+        if ($0 ~ /\.(min\.js|min\.css|pb\.go|generated\.go|snap)( |$)/) skip = 1
+      }
+      !skip { print }
+    ' "$DIFF_FILE"
+  else
+    echo
+    echo "=== ${kind} Diff ==="
+    cat "$DIFF_FILE"
+  fi
+}
+
+if [[ "$PR_URL" =~ ^https://github\.com/([^/]+)/([^/]+)/pull/([0-9]+)([/?#].*)?$ ]]; then
+  require_command gh
+  repo="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+  number=${BASH_REMATCH[3]}
+
+  if ! gh auth status >/dev/null 2>&1; then
+    echo "错误：gh CLI 未认证。请先运行：gh auth login" >&2
+    exit 1
+  fi
 
   echo "=== PR 元数据 ==="
-  if ! gh pr view "$PR_NUM" --repo "$REPO" \
-    --json title,body,author,labels,files,additions,deletions,baseRefName,headRefName 2>&1; then
-    echo "错误：无法获取 PR #${PR_NUM}（仓库：${REPO}）。请检查 PR 是否存在以及是否有访问权限。"
+  if ! gh pr view "$number" --repo "$repo" \
+    --json title,body,author,labels,files,additions,deletions,baseRefName,headRefName,headRefOid,state,url; then
+    echo "错误：无法获取 PR #${number}（仓库：${repo}）。" >&2
     exit 1
   fi
 
-  echo ""
-  echo "=== PR Diff 统计 ==="
-  DIFF_STAT=$(gh pr diff "$PR_NUM" --repo "$REPO" 2>&1 | diffstat -s 2>/dev/null || true)
-  FILE_COUNT=$(gh pr view "$PR_NUM" --repo "$REPO" --json files --jq '.files | length' 2>/dev/null || echo "0")
-  ADD_COUNT=$(gh pr view "$PR_NUM" --repo "$REPO" --json additions --jq '.additions' 2>/dev/null || echo "0")
-  DEL_COUNT=$(gh pr view "$PR_NUM" --repo "$REPO" --json deletions --jq '.deletions' 2>/dev/null || echo "0")
-  TOTAL_LINES=$((ADD_COUNT + DEL_COUNT))
+  print_github_review_context "$repo" "$number"
 
-  echo "文件数: ${FILE_COUNT}, 新增行: ${ADD_COUNT}, 删除行: ${DEL_COUNT}, 总变更行: ${TOTAL_LINES}"
-
-  if [ "$FILE_COUNT" -gt 100 ] || [ "$TOTAL_LINES" -gt 3000 ] 2>/dev/null; then
-    echo ""
-    echo "⚠️  大 PR 警告：${FILE_COUNT} 个文件, ${TOTAL_LINES} 行变更"
-    echo "自动过滤以下文件的 diff：lock 文件、vendor 目录、生成代码"
-    echo ""
-    echo "=== PR Diff（已过滤机器生成文件） ==="
-    if ! gh pr diff "$PR_NUM" --repo "$REPO" 2>&1 | \
-      awk '
-        /^diff --git/ {
-          skip = 0
-          if ($0 ~ /\/(vendor|node_modules|third_party|generated|__generated__)\//) skip = 1
-          if ($0 ~ /\.(lock|sum|min\.js|min\.css|pb\.go|generated\.go|snap)[ \t]/) skip = 1
-          if ($0 ~ /package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|go\.sum|Pipfile\.lock|composer\.lock|Gemfile\.lock|poetry\.lock/) skip = 1
-        }
-        !skip { print }
-      '; then
-      echo "错误：无法获取 PR diff。请检查 PR 是否存在以及是否有访问权限。"
-      exit 1
-    fi
-  else
-    echo ""
-    echo "=== PR Diff ==="
-    if ! gh pr diff "$PR_NUM" --repo "$REPO" 2>&1; then
-      echo "错误：无法获取 PR diff。请检查 PR 是否存在以及是否有访问权限。"
-      exit 1
-    fi
-  fi
-
-# GitLab
-elif echo "$PR_URL" | grep -q "gitlab.com"; then
-  # Check glab CLI is installed
-  if ! command -v glab &>/dev/null; then
-    echo "错误：未找到 glab CLI。请先安装：https://gitlab.com/gitlab-org/cli"
+  if ! gh pr diff "$number" --repo "$repo" >"$DIFF_FILE" 2>&1; then
+    echo "错误：无法获取 PR diff（仓库：${repo}，PR：#${number}）。" >&2
+    sed -n '1,20p' "$DIFF_FILE" >&2
     exit 1
   fi
+  print_diff "PR"
 
-  MR_NUM=$(echo "$PR_URL" | sed -E 's|.*merge_requests/([0-9]+).*|\1|')
+elif [[ "$PR_URL" =~ ^https://gitlab\.com/(.+)/-/merge_requests/([0-9]+)([/?#].*)?$ ]]; then
+  require_command glab
+  repo=${BASH_REMATCH[1]}
+  number=${BASH_REMATCH[2]}
 
   echo "=== MR 元数据 ==="
-  if ! glab mr view "$MR_NUM" 2>&1; then
-    echo "错误：无法获取 MR #${MR_NUM}。请确保已登录 glab（glab auth login）并检查 MR 是否存在。"
+  if ! glab mr view "$number" --repo "$repo"; then
+    echo "错误：无法获取 MR !${number}（仓库：${repo}）。" >&2
     exit 1
   fi
 
-  echo ""
-  echo "=== MR Diff ==="
-  MR_DIFF=$(glab mr diff "$MR_NUM" 2>&1) || { echo "警告：无法自动获取 diff，请手动粘贴"; MR_DIFF=""; }
-  if [ -n "$MR_DIFF" ]; then
-    MR_DIFF_LINES=$(echo "$MR_DIFF" | wc -l)
-    MR_FILE_COUNT=$(echo "$MR_DIFF" | grep -c '^diff --git' || true)
-    echo "文件数: ${MR_FILE_COUNT}, diff 行数: ${MR_DIFF_LINES}"
-    if [ "$MR_FILE_COUNT" -gt 100 ] || [ "$MR_DIFF_LINES" -gt 6000 ] 2>/dev/null; then
-      echo ""
-      echo "⚠️  大 MR 警告：${MR_FILE_COUNT} 个文件, ${MR_DIFF_LINES} 行 diff"
-      echo "自动过滤 lock 文件、vendor 目录、生成代码的 diff"
-      echo "$MR_DIFF" | awk '
-        /^diff --git/ {
-          skip = 0
-          if ($0 ~ /\/(vendor|node_modules|third_party|generated|__generated__)\//) skip = 1
-          if ($0 ~ /\.(lock|sum|min\.js|min\.css|pb\.go|generated\.go|snap)[ \t]/) skip = 1
-          if ($0 ~ /package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|go\.sum|Pipfile\.lock|composer\.lock|Gemfile\.lock|poetry\.lock/) skip = 1
-        }
-        !skip { print }
-      '
-    else
-      echo "$MR_DIFF"
-    fi
+  if ! glab mr diff "$number" --repo "$repo" --raw >"$DIFF_FILE" 2>&1; then
+    echo "错误：无法获取 MR diff（仓库：${repo}，MR：!${number}）。" >&2
+    sed -n '1,20p' "$DIFF_FILE" >&2
+    exit 1
   fi
+  print_diff "MR"
 
 else
-  echo "不支持的平台，请直接粘贴 diff 内容"
+  echo "错误：不支持或无效的 PR/MR URL。仅支持 github.com/.../pull/<n> 和 gitlab.com/.../-/merge_requests/<n>。" >&2
   exit 1
 fi
