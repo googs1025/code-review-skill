@@ -212,6 +212,8 @@ test_single_commit_fetch_does_not_include_ancestors() {
 test_review_depth_contracts() {
   assert_contains "$ROOT_DIR/SKILL.md" "读取线上材料后"
   assert_contains "$ROOT_DIR/SKILL.md" "两个独立选择"
+  assert_contains "$ROOT_DIR/SKILL.md" "明确要求不要提问或不要中断"
+  assert_contains "$ROOT_DIR/SKILL.md" "未选择的选项按“否”处理"
   assert_contains "$ROOT_DIR/references/code_review.md" "轻量审查不得拉取或检出仓库，也不得运行本地测试"
   assert_contains "$ROOT_DIR/references/code_review.md" "最小相关测试"
   assert_contains "$ROOT_DIR/references/code_review.md" "安装依赖、启动容器、访问外部服务"

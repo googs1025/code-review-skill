@@ -27,6 +27,8 @@ description: Use when reviewing a GitHub or GitLab PR/MR, raw diff, code snippet
 
 用户可以分别选择，不能把同意其中一项视为同意另一项。轻量审查只使用线上 Issue/PR、diff、评论、关联上下文和可见 CI；本地验证与子 agent 的具体边界见代码审查或 Issue 分析指南。
 
+若用户明确要求不要提问或不要中断，且没有预先选择上述选项，不要据此扩大权限：未选择的选项按“否”处理，直接继续轻量审查并说明未执行本地验证、未启用子 agent。
+
 如果目标仓库可访问：
 
 - 先读仓库级说明（如 `AGENTS.md`、`CLAUDE.md`、`CONTRIBUTING.md`）。

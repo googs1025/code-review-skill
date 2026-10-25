@@ -15,6 +15,9 @@ An evidence-first code review skill for Codex and Claude Code. It supports GitHu
 - **Complete PR reports** — overview, motivation, core changes, technical approach, severity sections, verification, and verdict
 - **Adaptive focused output** — concise for snippets and explicitly scoped reviews
 - **Existing-review assessment** — independently checks substantive AI/bot comments against the current PR head
+- **Explicit review depth** — after reading an online Issue or PR, asks whether to keep the review lightweight or pull the code for local validation
+- **Optional second perspective** — independently asks whether to use one subagent, then verifies its candidate findings before reporting them
+- **Flow and design focus** — prioritizes execution paths, state transitions, module boundaries, contracts, error paths, compatibility, and design tradeoffs
 - **GitHub & GitLab** — works with both platforms via `gh` and `glab` CLIs
 - **Language-aware** — security checklist covers Go, Python, JS/TS, Rust, Java
 
@@ -77,6 +80,12 @@ Codex can discover the skill automatically for review requests, or you can invok
 # Review a pasted diff or code snippet
 /code-review-skill
 ```
+
+For an online Issue or PR, the skill reads the available description, diff, comments, related context, and CI first. It then asks two independent questions: whether to pull or check out the code for local validation, and whether to use one subagent for an independent review.
+
+- A lightweight review does not clone, fetch, check out, or run local tests.
+- If local validation is approved, the skill runs the smallest relevant tests without asking about every command. Installing dependencies, starting containers, accessing external services, or otherwise expanding the local environment still requires separate approval.
+- If a subagent is approved, it focuses on the main execution flow and design boundaries. Its output remains candidate evidence until the primary agent independently verifies it.
 
 ### Example output
 
@@ -164,10 +173,11 @@ code-review-skill/
 
 1. The agent loads `SKILL.md` and routes the request by input type.
 2. GitHub PR fetching also collects review summaries, inline threads, and general PR comments.
-3. Existing AI/bot findings are independently classified as valid, fixed, partial, incorrect, or unverified against the current head.
-4. Code reviews and issue analysis load separate references; security guidance loads only for security-sensitive paths.
-5. Candidate findings are checked for reachability, concrete impact, change relevance, and confidence.
-6. Full PR/MR reviews use a stable report structure; snippets and focused reviews stay concise.
+3. After online Issue/PR evidence is read, the user independently chooses local validation and a single-subagent review.
+4. Existing AI/bot and optional subagent findings are independently checked against the current head before they can become findings.
+5. Reviews prioritize the main flow and design boundaries; candidate findings are checked for reachability, concrete impact, change relevance, and confidence.
+6. Code reviews and issue analysis load separate references; security guidance loads only for security-sensitive paths.
+7. Full PR/MR reviews use a stable report structure; snippets and focused reviews stay concise.
 
 ## Contributing
 
@@ -201,6 +211,15 @@ MIT
 ## 中文文档
 
 一个面向 Codex 和 Claude Code 的证据优先代码审查 Skill。支持 GitHub/GitLab PR、diff、代码片段、commit、模块审查和 Issue 分析，强调可达路径、具体影响、置信度和简洁的合并建议。
+
+### 审查深度与重点
+
+对于线上 Issue 或 PR，Skill 会先读取描述、diff、评论、关联上下文和可见 CI，再一次询问两个互相独立的选择：是否拉取或检出代码进行本地验证，以及是否启用一个子 agent 独立复审。
+
+- 轻量审查不会 clone、fetch、checkout，也不会运行本地测试。
+- 用户同意本地验证后，Skill 会直接运行覆盖核心变更路径的最小相关测试；安装依赖、启动容器、访问外部服务或扩大本地环境影响仍需另行授权。
+- 用户同意子 agent 复审后，只启用一个子 agent。它重点检查主执行流程、状态流转、模块边界、接口契约、错误路径、兼容性和设计取舍；主 agent 独立核验后才能采纳其结论。
+- 格式、命名和一般风格偏好默认不作为主要审查目标。
 
 ### 安装
 
