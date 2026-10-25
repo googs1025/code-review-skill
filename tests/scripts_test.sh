@@ -209,6 +209,15 @@ test_single_commit_fetch_does_not_include_ancestors() {
   assert_contains "$output" "second-only"
 }
 
+test_review_depth_contracts() {
+  assert_contains "$ROOT_DIR/SKILL.md" "读取线上材料后"
+  assert_contains "$ROOT_DIR/SKILL.md" "两个独立选择"
+  assert_contains "$ROOT_DIR/references/code_review.md" "轻量审查不得拉取或检出仓库，也不得运行本地测试"
+  assert_contains "$ROOT_DIR/references/code_review.md" "最小相关测试"
+  assert_contains "$ROOT_DIR/references/code_review.md" "安装依赖、启动容器、访问外部服务"
+  assert_contains "$ROOT_DIR/references/code_review.md" "核心执行流程、数据与状态流转、模块边界、接口契约、错误路径、兼容性和设计取舍"
+}
+
 test_single_commit_fetch_does_not_include_ancestors
 test_gitlab_pr_uses_repo_from_url
 test_gitlab_issue_uses_repo_from_url
@@ -216,5 +225,6 @@ test_github_diff_failure_is_not_hidden
 test_github_diff_is_fetched_once
 test_github_fetches_existing_review_context
 test_deceptive_github_url_is_rejected
+test_review_depth_contracts
 
-echo "PASS: 7 script behavior tests"
+echo "PASS: 8 script behavior tests"
