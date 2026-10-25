@@ -18,6 +18,17 @@ description: Use when reviewing a GitHub or GitLab PR/MR, raw diff, code snippet
 
 `<skill-dir>` 是本 `SKILL.md` 所在目录；不要假设当前工作目录就是 skill 目录。脚本失败时报告具体错误，并改用已有的本地仓库、平台工具或用户提供的内容继续；只有缺失信息会实质改变结论时才询问用户。
 
+## 线上 Issue / PR 的审查深度
+
+读取线上材料后，在拉取代码或展开深度审查前，一次询问用户两个独立选择：
+
+1. 是否拉取或检出对应代码到本地进行验证；
+2. 是否启用一个子 agent 独立复审。
+
+用户可以分别选择，不能把同意其中一项视为同意另一项。轻量审查只使用线上 Issue/PR、diff、评论、关联上下文和可见 CI；本地验证与子 agent 的具体边界见代码审查或 Issue 分析指南。
+
+若用户明确要求不要提问或不要中断，且没有预先选择上述选项，不要据此扩大权限：未选择的选项按“否”处理，直接继续轻量审查并说明未执行本地验证、未启用子 agent。
+
 如果目标仓库可访问：
 
 - 先读仓库级说明（如 `AGENTS.md`、`CLAUDE.md`、`CONTRIBUTING.md`）。
@@ -29,7 +40,7 @@ description: Use when reviewing a GitHub or GitLab PR/MR, raw diff, code snippet
 
 1. 先确认变更意图、原有行为和必须保持的契约。
 2. 追踪输入到副作用的执行路径，验证候选问题是否可达、是否由本次变更新增或恶化。
-3. 查看现有测试是否覆盖该路径；在权限和成本合理时运行最小相关验证。审查请求只授权只读检查，不授权修改代码。
+3. 查看现有测试是否覆盖该路径；对于线上 Issue/PR，只有用户选择本地验证后才运行最小相关验证。审查请求只授权只读检查，不授权修改代码。
 4. 只有能说明具体触发条件和影响的问题才进入 findings。风格偏好、未证实风险和与变更无关的旧问题不应阻塞合并。
 5. 涉及认证授权、不可信输入、命令/查询构造、反序列化、密钥、加密或依赖供应链时，读 [references/security_checklist.md](references/security_checklist.md)。
 6. 已有 reviewer 的结论只能作为候选线索；必须对照当前 PR head 独立验证后，才能进入 findings。
