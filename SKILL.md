@@ -27,12 +27,23 @@ description: Use when reviewing a GitHub or GitLab PR/MR, raw diff, code snippet
 
 ## 审查契约
 
-1. 先确认变更意图、原有行为和必须保持的契约。
+1. 先确认变更意图、原有行为和必须保持的契约，再完成合理性门槛；不要默认每个 Issue 都应修、每个 PR 都应合并。
 2. 追踪输入到副作用的执行路径，验证候选问题是否可达、是否由本次变更新增或恶化。
 3. 查看现有测试是否覆盖该路径；在权限和成本合理时运行最小相关验证。审查请求只授权只读检查，不授权修改代码。
 4. 只有能说明具体触发条件和影响的问题才进入 findings。风格偏好、未证实风险和与变更无关的旧问题不应阻塞合并。
 5. 涉及认证授权、不可信输入、命令/查询构造、反序列化、密钥、加密或依赖供应链时，读 [references/security_checklist.md](references/security_checklist.md)。
 6. 已有 reviewer 的结论只能作为候选线索；必须对照当前 PR head 独立验证后，才能进入 findings。
+
+## 合理性门槛
+
+在评估实现质量前，独立回答“是否应该做”：
+
+- 诉求或问题是否由复现、代码、文档、历史行为、关联讨论或业务约束支持；
+- 是否符合项目目标、产品语义和责任边界，而非重复、已解决或应由配置、文档、运维、上游依赖处理；
+- 方案是否解决根因，范围是否与收益匹配，是否存在更小或更可逆的替代方案；
+- 用户或业务收益是否足以承担兼容性、复杂度、迁移、性能和长期维护成本。
+
+实现正确不等于值得合并。必须把需求合理性与方案合理性分开；真实问题可以对应不合理的实现方案。只使用可引用的现有证据，缺少会改变决策的业务或代码上下文时结论为“证据不足”，并指出需要什么信息，不能把猜测写成“不合理”。允许的建议包括接受、缩小范围、补充证据、延期、拒绝、关闭、采用非代码方案或无需处理。
 
 每条 finding 必须包含：
 
@@ -50,17 +61,20 @@ description: Use when reviewing a GitHub or GitLab PR/MR, raw diff, code snippet
 
 严重性衡量影响，不代表置信度。仅仅匹配到危险 API、缺少 timeout/recover/test/license header，不能自动决定等级。
 
-结论映射：
+结论先经过合理性门槛，再结合 findings：
 
-- 存在 Critical 或 Major：`REQUEST_CHANGES`
-- 只有 Minor 或尚待验证的风险：`COMMENT`
-- 没有阻塞问题：`APPROVE`
+- 有证据表明需求或方案不合理：`REQUEST_CHANGES`，即使实现本身没有缺陷。
+- 结论为部分合理，且合并前必须缩小范围或改变方案：`REQUEST_CHANGES`。
+- 关键上下文不足且会改变是否合并的决定：`COMMENT`，明确请求证据。
+- 合理性不阻塞时，存在 Critical 或 Major：`REQUEST_CHANGES`。
+- 合理性不阻塞且只有 Minor 或尚待验证的非关键风险：`COMMENT`。
+- 只有合理性不阻塞且没有阻塞问题时：`APPROVE`。
 
 ## 输出
 
 默认使用用户语言，并严格使用代码审查指南中与输入类型对应的输出模式：
 
-- 完整 PR/MR review 必须输出完整报告，包括概览、PR 主要工作、已有 review 评估（存在时）、Critical/Major/Minor、Verification 和总体评价；没有问题的严重等级也保留并明确写“无”。
+- 完整 PR/MR review 必须输出完整报告，包括概览、PR 主要工作、合理性评估、已有 review 评估（存在时）、Critical/Major/Minor、Verification 和总体评价；没有问题的严重等级也保留并明确写“无”。
 - 小型代码片段、单文件检查和用户明确指定的聚焦审查使用精简格式。
 - Issue 使用独立的 Issue 分析模板。
 
