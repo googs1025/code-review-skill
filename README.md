@@ -14,6 +14,8 @@ An evidence-first code review skill for Codex and Claude Code. It supports GitHu
 - **Calibrated grading** — separates Critical/Major/Minor impact from confidence
 - **Complete PR reports** — overview, motivation, core changes, technical approach, severity sections, verification, and verdict
 - **Adaptive focused output** — concise for snippets and explicitly scoped reviews
+- **Risk-based review depth** — selects requirements, implementation consistency, and system-impact checks by change semantics and affected contracts, not line count
+- **Human decision boundaries** — validates technical facts independently and surfaces unresolved product, workflow, or API decisions for human judgment
 - **Existing-review assessment** — independently checks substantive AI/bot comments against the current PR head
 - **GitHub & GitLab** — works with both platforms via `gh` and `glab` CLIs
 - **Language-aware** — security checklist covers Go, Python, JS/TS, Rust, Java
@@ -168,6 +170,8 @@ code-review-skill/
 4. Code reviews and issue analysis load separate references; security guidance loads only for security-sensitive paths.
 5. Candidate findings are checked for reachability, concrete impact, change relevance, and confidence.
 6. Full PR/MR reviews use a stable report structure; snippets and focused reviews stay concise.
+7. Review depth follows change semantics and affected callers. Test-only changes usually receive local checks; shared behavior or contract changes trigger broader tracing even in a small diff.
+8. Existing human decisions are reused. Unresolved business decisions that affect the verdict are listed separately from code findings; technical checks continue, with `COMMENT` when such decisions remain and no other established blocker exists.
 
 ## Contributing
 
@@ -201,6 +205,8 @@ MIT
 ## 中文文档
 
 一个面向 Codex 和 Claude Code 的证据优先代码审查 Skill。支持 GitHub/GitLab PR、diff、代码片段、commit、模块审查和 Issue 分析，强调可达路径、具体影响、置信度和简洁的合并建议。
+
+审查按变更性质和影响范围选择需求正确性、实现一致性与系统影响的检查深度。纯测试通常局部检查；共享逻辑或契约变化即使只有一行，也需追踪相关影响。人决定需求、产品取舍、流程规则与接口契约，agent 验证技术事实及实现是否符合既定规则；关键业务决策缺失时单列“待人工确认”，并继续其他技术检查。
 
 ### 安装
 
