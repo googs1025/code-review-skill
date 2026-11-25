@@ -91,14 +91,19 @@ Codex can discover the skill automatically for review requests, or you can invok
 
 ## PR 主要工作
 
-### 背景与动机
-避免 prefill/decode 运行不兼容的协议版本。
+### 浅显版
+部署示例中的 prefill 和 decode 需要使用兼容的协议版本，才能在模型推理时交接请求。
+
+- **例子**：用户部署 PD 示例后发起一次推理。改动前，两端可能拉取不同版本的镜像，导致请求在交接时失败。改动后预期两端使用同一个已验证版本，请求能正常交接。
+
+### 深度版
+两端独立拉取镜像时，固定版本的一端可能与使用浮动 tag 的另一端使用不同协议。
 
 ### 核心变更
-将两端镜像固定到同一个已验证版本。
+PR 计划将两端镜像固定到同一个已验证版本。
 
 ### 技术方案
-保持现有部署结构，只统一镜像 tag。
+统一配置中的镜像 tag。
 
 ## Critical Issues（必须解决才能合并）
 ✅ 无 Critical 问题
@@ -108,8 +113,9 @@ Codex can discover the skill automatically for review requests, or you can invok
 ### [高置信度] PD YAML 中 prefill/decode 镜像版本不一致
 - **位置**: `tensor-rt-pd.yaml:47` vs `:88`
 - **证据**: prefill 固定 `:1.0.0`，decode 使用 `:latest`
+- **场景** 常规用法。按示例启动服务即可进入这条路径，实际拉到不兼容版本的频率未知。
 - **影响**: 两端可能运行不兼容协议版本
-- **建议**: 将两端固定到同一个已验证版本
+- **建议** 在示例配置里将两端固定到同一个已验证版本，从镜像选择处修复协议不匹配。
 
 ## Minor Issues（可选优化）
 ✅ 无 Minor 问题
